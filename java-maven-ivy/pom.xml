@@ -1,0 +1,200 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.blogspot.hypefree</groupId>
+  <artifactId>maven-ivy</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>jar</packaging>
+  
+  <name>maven-ivy</name>
+  <url>http://maven.apache.org</url>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.build.jdk>1.6</project.build.jdk>
+    <!-- If you change this, please also change it in the activation tags below -->
+    <ivy.target.lib.dir>${basedir}/ivy-lib</ivy.target.lib.dir>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.10</version>
+      <scope>test</scope>
+    </dependency>    
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>2.3.2</version>
+          <configuration>
+              <source>${project.build.jdk}</source>
+              <target>${project.build.jdk}</target>
+          </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>ivy-dependencies</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <file>
+          <exists>${basedir}/ivy-lib</exists>
+        </file>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>com.example.ivyimport</groupId>
+          <artifactId>example-GroboUtils-GroboUtils</artifactId>
+          <version>5-core</version>
+          <scope>system</scope>
+          <systemPath>${ivy.target.lib.dir}/example-GroboUtils-GroboUtils--5-core.jar</systemPath>
+        </dependency>
+        <dependency>
+          <groupId>com.example.ivyimport</groupId>
+          <artifactId>example-jaudiotagger-jaudiotagger</artifactId>
+          <version>2.0.4-SNAPSHOT</version>
+          <scope>system</scope>
+          <systemPath>${ivy.target.lib.dir}/example-jaudiotagger-jaudiotagger--2.0.4-SNAPSHOT.jar</systemPath>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>ivy-resolve</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <file>
+          <missing>${basedir}/ivy-lib</missing>
+        </file>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.ivy</groupId>
+          <artifactId>ivy</artifactId>
+          <version>2.2.0</version>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.ant</groupId>
+          <artifactId>ant-apache-bsf</artifactId>
+          <version>1.8.2</version>
+        </dependency>
+        <dependency>
+            <groupId>rhino</groupId>
+            <artifactId>rhino</artifactId>
+            <version>1.5R4.1</version>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>1.6</version>
+            <executions>
+              <execution>
+                <phase>generate-resources</phase>
+                <configuration>
+                  <target>
+                    <mkdir dir="${ivy.target.lib.dir}"/>
+                    <echo file="${ivy.target.lib.dir}/ivy.xml"><![CDATA[
+                      <ivy-module version="2.0" 
+                                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                                  xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd">
+                        <info organisation="example" module="test" />
+                        <dependencies>
+                          <dependency name="jaudiotagger" rev="2.0.4-SNAPSHOT" />
+                          <dependency name="GroboUtils" rev="5-core" />
+                        </dependencies>
+                      </ivy-module>
+                    ]]></echo>
+                    <echo file="${ivy.target.lib.dir}/ivysettings.xml"><![CDATA[
+                      <ivysettings>
+                          <settings defaultResolver="chain"/>
+                          <resolvers>
+                              <chain name="chain">
+                                  <ibiblio name="central" m2compatible="true"/>
+                                  <ibiblio name="springsource-external" m2compatible="true" root="http://repository.springsource.com/maven/bundles/external"/>
+                                  <ibiblio name="springsource-release" m2compatible="true" root="http://repository.springsource.com/maven/bundles/release"/>
+                                  <url name="googlecode">
+                                      <artifact pattern="http://red5.googlecode.com/svn/repository/[artifact](-[revision]).[ext]" />
+                                      <artifact pattern="http://red5.googlecode.com/svn/repository/[organisation]/[artifact](-[revision]).[ext]" />
+                                  </url>
+                              </chain>
+                          </resolvers>
+                      </ivysettings>
+                    ]]></echo>
+                    <copy file="${org.apache.ivy:ivy:jar}" tofile="${ivy.target.lib.dir}/ivy.jar" />
+                    <echo file="${ivy.target.lib.dir}/build.xml"><![CDATA[
+                      <project name="ivy" default="go" xmlns:ivy="antlib:org.apache.ivy.ant">                        
+                        <target name="go">
+                          <taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpath="ivy.jar" />
+                          <ivy:settings file="ivysettings.xml"/>
+                          <ivy:retrieve pattern="./[organization]-[module]-[artifact](-[classifier])--[revision].[ext]" />
+                          
+                          <script language="javascript"> <![CDATA[
+                            importClass(java.io.File);
+                            
+                            var dir = project.getProperty("ivy.target.lib.dir");
+                            var fs = project.createDataType("fileset");
+                            fs.setDir( new File(dir) );
+                            fs.setIncludes("*--*.jar");
+                            
+                            var ds = fs.getDirectoryScanner(project);
+                            var srcFiles = ds.getIncludedFiles();
+                            
+                            var dependencies = "";
+                            for (i=0; i<srcFiles.length; i++) {
+                              var filename = srcFiles[i];
+                              var match = filename.match(/(.*)\-\-(.*)\.jar/i);
+                              if (!match) { continue; }
+                              
+                              dependencies += "<dependency>\n"
+                                + "\t<groupId>com.example.ivyimport</groupId>\n"
+                                + "\t<artifactId>" + match[1] + "</artifactId>\n"
+                                + "\t<version>" + match[2] + "</version>\n"
+                                + "\t<scope>system</scope>\n"
+                                + "\t<systemPath>$" + "{ivy.target.lib.dir}/" + filename + "</systemPath>\n"
+                                + "</dependency>\n"
+                            }
+                            
+                            var echo = project.createTask("echo");
+                            go.addTask(echo);
+                            echo.setMessage(dependencies);
+                            echo.setFile( new File(dir + "/dependencies.txt") );
+                          ]]]><![CDATA[]></script>
+                        </target>
+                      </project>
+                    ]]></echo>
+                    <ant dir="${ivy.target.lib.dir}" antfile="${ivy.target.lib.dir}/build.xml" target="go">
+                      <property name="ivy.target.lib.dir" value="${ivy.target.lib.dir}" />
+                    </ant>
+                    <delete file="${ivy.target.lib.dir}/ivy.xml" failonerror="false" deleteonexit="true" quiet="true" />
+                    <delete file="${ivy.target.lib.dir}/ivysettings.xml" failonerror="false" deleteonexit="true" quiet="true" />
+                    <delete file="${ivy.target.lib.dir}/build.xml" failonerror="false" deleteonexit="true" quiet="true" />
+                    <delete file="${ivy.target.lib.dir}/ivy.jar" failonerror="false" deleteonexit="true" quiet="true" />
+                    
+                    <echo><![CDATA[                    
+                      .:[ This task will fail intentionally ]:.
+                      * Ivy dependencies resolved. Please re-run for the actual build.
+                      * You can find the dependencies list in ${ivy.target.lib.dir}/dependencies.txt
+                    ]]></echo>                                        
+                    <fail message="" />
+                  </target>
+                </configuration>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

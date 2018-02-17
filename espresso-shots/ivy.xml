@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<ivy-module version="2.0">
+    <info organisation="org.transylvania.jug" module="espresso"/>
+    <dependencies>
+        <dependency org="commons-lang" name="commons-lang" rev="2.6" conf="*->*,!sources,!javadoc" />
+        <dependency org="junit" name="junit" rev="4.10" conf="*->*,!sources,!javadoc" />
+        <dependency org="log4j" name="log4j" rev="1.2.17" conf="*->*,!sources,!javadoc" />
+        <dependency org="com.google.code.gson" name="gson" rev="2.2.2" conf="*->*,!sources,!javadoc" />
+        <dependency org="org.codehaus.jackson" name="jackson-core-asl" rev="1.9.10" conf="*->*,!sources,!javadoc" />
+        <dependency org="org.codehaus.jackson" name="jackson-mapper-asl" rev="1.9.10" conf="*->*,!sources,!javadoc" />
+    </dependencies>
+</ivy-module>

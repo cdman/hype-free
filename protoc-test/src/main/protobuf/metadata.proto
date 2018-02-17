@@ -1,0 +1,11 @@
+package tutorial;
+
+option java_package = "com.example.protoctest";
+option java_outer_classname = "MetadataProtos";
+
+message Metadata {
+  required bytes field_descriptor = 1;
+  optional int32 field_descriptor_idx = 2;
+  
+  repeated Metadata dependencies = 3;
+}

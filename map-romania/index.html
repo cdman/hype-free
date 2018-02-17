@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Clickable Map of Romania</title>
+</head>
+<body>
+  <div id="map"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js"></script>
+  <script src="scale.raphael.js"></script>
+  <script src="map-romania.js"></script>
+  <script>
+  (function () {
+    var map = drawMap("map", 0.5, {fill: '#003366', stroke: '#fff', 'stroke-width': '5'});
+    var bucharest = map.counties.B;
+    var mouseoverAnim = Raphael.animation({transform: 's1.2'}, 200);
+    var mouseoutAnim = Raphael.animation({transform: 's1.05'}, 200);
+    var clickAnim = Raphael.animation({fill: 'green'}, 200);
+    for (var countyName in map.counties) {
+      (function (name) {
+        var el = map.counties[name];
+        el.mouseover(function() {
+            this.toFront();
+            bucharest.toFront();
+            this.attr({
+                cursor: 'pointer',
+                fill: '#990000',
+                stroke: '#fff',
+            });
+            this.animate(mouseoverAnim);
+        });
+        el.mouseout(function() {
+            this.animate(mouseoutAnim);
+            this.attr({
+                fill: '#003366'
+            });
+        });
+        el.click(function() {
+            this.animate(clickAnim);
+            console.log(name);
+        });
+      })(countyName);
+    }
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Youtube Mix</title>
+  <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.4.0/build/cssreset/cssreset-min.css">
+  <link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
+  <style>
+  #vplayerWrapper {
+    width: 424px; 
+    height: 315px; 
+  }
+  
+  .vplayer {
+    overflow: hidden;
+    border: 1px solid black;
+  }
+  
+  #firstVPlayer {
+    float: left;
+  }
+  
+  #secondVPlayer {
+    float: right;
+  }
+  
+  .vplayerContainer {
+    position: relative;
+    width: 420px; 
+    height: 315px;    
+  }  
+  </style>
+</head>
+<body>
+
+<div id="vplayerWrapper">
+  <div id="firstVPlayer" class="vplayer">
+    <div id="firstVPlayerContainer" class="vplayerContainer">
+      <div id="firstVPlayerTarget"></div>
+    </div>
+  </div>
+  <div id="secondVPlayer" class="vplayer">
+    <div id="secondVPlayerContainer" class="vplayerContainer">
+      <div id="secondVPlayerTarget"></div>
+    </div>
+  </div>
+</div>
+
+<input type="button" id="play">
+Position:
+<div id="video-position" style="margin: 10px; width: 420px;"></div>
+Volume:
+<div id="video-volume" style="margin: 10px; width: 100px;"></div>
+Crossfade (Original - New):
+<div id="video-crossfade" style="margin: 10px; width: 100px;"></div>
+
+<script>
+var ytPlayers = [];
+var volume = 100, crossfade = 0;
+
+function onPlayerError(errorCode) {
+  alert("An error occured of type:" + errorCode);
+}
+
+function updatePlayerInfo() {
+  if (0 == ytPlayers.length) { return; }
+  if (!ytPlayers[0]) { return; }
+  if (!ytPlayers[0].getDuration) { return; }
+  
+  var position = ytPlayers[0].getCurrentTime() * 100 / ytPlayers[0].getDuration();
+  $("#video-position").slider("option", "value", position);
+}
+
+function setVolume() {
+  var p1 = (100 - crossfade) / 100;
+  var p2 = crossfade / 100;
+  
+  ytPlayers[0].setVolume(volume * p1);
+  ytPlayers[1].setVolume(volume * p2);
+  
+  var width = 420;
+  var w1 = width * p1;
+  var w2 = width * p2;
+  
+  $('#firstVPlayer').width(w1);
+  $('#secondVPlayer').width(w2);
+  $('#secondVPlayerContainer').css('left', -w1);
+}
+
+function onYouTubePlayerReady(playerId) {
+  var ytplayer = document.getElementById(playerId);
+  ytplayer.addEventListener("onError", "onPlayerError");
+  ytplayer.cueVideoById(playerId);
+  ytplayer.seekTo(0, true);
+  ytplayer.pauseVideo();
+  ytplayer.setVolume(0);
+  if (2 == ytPlayers.push(ytplayer)) {
+    var ppButton = $('#play');
+    ppButton.val('Play');
+    ppButton.click(function() {
+      if ('Play' == ppButton.val()) {
+        ppButton.val('Pause');
+        for (var i in ytPlayers) { ytPlayers[i].playVideo(); }
+      } 
+      else {
+        ppButton.val('Play');
+        for (var i in ytPlayers) { ytPlayers[i].pauseVideo(); }
+      }
+    });
+    
+    $("#video-position").slider({
+      change : function(e, u) { 
+        if (!e.orginalEvent) { return; }
+        for (var i in ytPlayers) { 
+          if (0 == ytPlayers[i].getDuration()) { return; }
+        }        
+        for (var i in ytPlayers) { 
+          var d = ytPlayers[i].getDuration();
+          ytplayer.seekTo(d * u.value / 100, true);
+        }
+      }
+    });
+    
+    $("#video-volume").slider({
+      value: volume,
+      change: function(e, u) { 
+        volume = u.value;
+        setVolume();
+      }
+    });
+    
+    $("#video-crossfade").slider({
+      change: function(e, u) { 
+        crossfade = u.value;
+        setVolume();
+      }
+    });
+    
+    setVolume();
+  }
+}
+
+function embedYTPlayer(videoId, targetDivId) {
+  var params = { allowScriptAccess: "always" };
+  var atts = { id: videoId };
+  swfobject.embedSWF("http://www.youtube.com/apiplayer?" +
+                     "version=3&enablejsapi=1&playerapiid=" + videoId, 
+                     targetDivId, "420", "315", "9", null, null, params, atts)
+}
+
+embedYTPlayer('FF-tKLISfPE', 'firstVPlayerTarget');
+embedYTPlayer('lQadOr9B7Qc', 'secondVPlayerTarget');
+setInterval(updatePlayerInfo, 250);
+</script>
+
+</body>
+</html>
